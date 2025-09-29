@@ -1,44 +1,25 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Camera, Database } from "lucide-react";
 import Layout from "@/components/Layout";
 import VetraLogo from "@/components/VetraLogo";
 import MainMenuCard from "@/components/MainMenuCard";
 import NavigationMenu from "@/components/NavigationMenu";
-import CameraInterface from "@/components/CameraInterface";
-import ResultsCard from "@/components/ResultsCard";
-
-// Mock data for demonstration
-const mockResults = [
-  { name: "Body Length", value: "145", unit: "cm", confidence: 0.94 },
-  { name: "Withers Height", value: "132", unit: "cm", confidence: 0.91 },
-  { name: "Heart Girth", value: "178", unit: "cm", confidence: 0.96 },
-  { name: "Hip Width", value: "52", unit: "cm", confidence: 0.89 },
-  { name: "Body Weight (Est.)", value: "485", unit: "kg", confidence: 0.87 }
-];
 
 const Home = () => {
-  const [showCamera, setShowCamera] = useState(false);
-  const [showResults, setShowResults] = useState(false);
-  const [capturedImage, setCapturedImage] = useState<string>("");
+  const navigate = useNavigate();
 
-  const handleOpenCamera = () => {
-    setShowCamera(true);
-  };
-
-  const handleImageCapture = (imageData: string) => {
-    setCapturedImage(imageData);
-    setShowCamera(false);
-    setShowResults(true);
+  const handleOpenVetra = () => {
+    navigate("/vetra");
   };
 
   const handleOpenData = () => {
-    // Navigate to data page - for now just show a toast
-    alert("Data page will be implemented with past records");
+    navigate("/data");
   };
 
   return (
     <Layout showHeader={false}>
-      <div className="max-w-lg mx-auto">
+      <div className="max-w-lg mx-auto pb-32">{/* Extra padding for bottom navigation */}
         {/* Hero Section */}
         <div className="text-center mb-8 pt-8">
           <VetraLogo className="h-20 mx-auto mb-4" />
@@ -53,7 +34,7 @@ const Home = () => {
             icon={<Camera className="w-6 h-6" />}
             title="Vetra (Trait Extraction)"
             description="Capture or upload livestock images for AI-powered trait analysis"
-            onClick={handleOpenCamera}
+            onClick={handleOpenVetra}
             variant="primary"
           />
 
@@ -71,30 +52,7 @@ const Home = () => {
           <NavigationMenu />
         </div>
 
-        {/* Footer */}
-        <div className="text-center mt-8 pb-8">
-          <p className="text-xs text-muted-foreground">
-            VETRA v1.0 • National Digital Livestock Mission
-          </p>
-        </div>
       </div>
-
-      {/* Modals */}
-      {showCamera && (
-        <CameraInterface
-          onCapture={handleImageCapture}
-          onClose={() => setShowCamera(false)}
-        />
-      )}
-
-      {showResults && (
-        <ResultsCard
-          imageUrl={capturedImage}
-          results={mockResults}
-          timestamp={new Date().toLocaleString()}
-          onClose={() => setShowResults(false)}
-        />
-      )}
     </Layout>
   );
 };
