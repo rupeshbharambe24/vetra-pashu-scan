@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { Camera, Upload, X, ArrowLeft } from "lucide-react";
+import { Camera, Upload, X, ArrowLeft, CheckCircle2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface VetraCaptureModalProps {
@@ -8,32 +8,46 @@ interface VetraCaptureModalProps {
 }
 
 const VetraCaptureModal = ({ onImageProcessed, onClose }: VetraCaptureModalProps) => {
-  const [step, setStep] = useState<"select" | "capture" | "upload" | "processing">("select");
-  const [capturedImage, setCapturedImage] = useState<string | null>(null);
+  const [step, setStep] = useState<"select" | "side-image" | "back-image" | "processing">("select");
+  const [sideImage, setSideImage] = useState<{ file: File; url: string } | null>(null);
+  const [backImage, setBackImage] = useState<{ file: File; url: string } | null>(null);
+  const [currentImageType, setCurrentImageType] = useState<"side" | "back">("side");
   const [isProcessing, setIsProcessing] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const cameraInputRef = useRef<HTMLInputElement>(null);
+  const sideFileInputRef = useRef<HTMLInputElement>(null);
+  const sideCameraInputRef = useRef<HTMLInputElement>(null);
+  const backFileInputRef = useRef<HTMLInputElement>(null);
+  const backCameraInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
+  const handleSideImageStart = () => {
+    setCurrentImageType("side");
+    setStep("side-image");
+  };
+
+  const handleBackImageStart = () => {
+    setCurrentImageType("back");
+    setStep("back-image");
+  };
+
   const handleCameraCapture = () => {
-    setStep("capture");
-    // Trigger camera input for Android devices
-    setTimeout(() => {
-      cameraInputRef.current?.click();
-    }, 100);
+    if (currentImageType === "side") {
+      sideCameraInputRef.current?.click();
+    } else {
+      backCameraInputRef.current?.click();
+    }
   };
 
   const handleGalleryUpload = () => {
-    setStep("upload");
-    setTimeout(() => {
-      fileInputRef.current?.click();
-    }, 100);
+    if (currentImageType === "side") {
+      sideFileInputRef.current?.click();
+    } else {
+      backFileInputRef.current?.click();
+    }
   };
 
-  const handleFileSelection = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelection = async (event: React.ChangeEvent<HTMLInputElement>, imageType: "side" | "back") => {
     const file = event.target.files?.[0];
     if (!file) {
-      setStep("select");
       return;
     }
 
@@ -43,30 +57,46 @@ const VetraCaptureModal = ({ onImageProcessed, onClose }: VetraCaptureModalProps
         description: "Please select an image smaller than 10MB",
         variant: "destructive"
       });
-      setStep("select");
       return;
     }
 
     const reader = new FileReader();
     reader.onload = (e) => {
       const result = e.target?.result as string;
-      setCapturedImage(result);
-      processImage(file);
+      const imageData = { file, url: result };
+      
+      if (imageType === "side") {
+        setSideImage(imageData);
+      } else {
+        setBackImage(imageData);
+      }
+      
+      setStep("select");
     };
     reader.readAsDataURL(file);
   };
 
-  const processImage = async (file: File) => {
+  const processImages = async () => {
+    if (!sideImage || !backImage) {
+      toast({
+        title: "Missing Images",
+        description: "Please provide both side and back view images",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setStep("processing");
     setIsProcessing(true);
 
     try {
       // Create FormData for API call
       const formData = new FormData();
-      formData.append('image', file);
+      formData.append('sideImage', sideImage.file);
+      formData.append('backImage', backImage.file);
 
       // Call backend API
-      const response = await fetch('/api/process-image', {
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/process-livestock-images`, {
         method: 'POST',
         body: formData,
       });
@@ -82,34 +112,16 @@ const VetraCaptureModal = ({ onImageProcessed, onClose }: VetraCaptureModalProps
         description: "Trait extraction completed successfully"
       });
 
-      onImageProcessed({
-        ...results,
-        imageUrl: capturedImage,
-        timestamp: new Date().toISOString()
-      });
+      onImageProcessed(results);
 
     } catch (error) {
-      console.error('Error processing image:', error);
+      console.error('Error processing images:', error);
       
-      // Fallback to mock data for development
-      const mockResults = {
-        traits: [
-          { name: "Body Length", value: "145", unit: "cm", confidence: 0.94 },
-          { name: "Withers Height", value: "132", unit: "cm", confidence: 0.91 },
-          { name: "Heart Girth", value: "178", unit: "cm", confidence: 0.96 },
-          { name: "Hip Width", value: "52", unit: "cm", confidence: 0.89 },
-          { name: "Body Weight (Est.)", value: "485", unit: "kg", confidence: 0.87 }
-        ],
-        imageUrl: capturedImage,
-        timestamp: new Date().toISOString()
-      };
-
       toast({
-        title: "Using Demo Data",
-        description: "Backend API not available, showing sample results"
+        title: "Processing Error",
+        description: "Failed to process images. Please try again.",
+        variant: "destructive"
       });
-
-      onImageProcessed(mockResults);
     } finally {
       setIsProcessing(false);
     }
@@ -121,9 +133,141 @@ const VetraCaptureModal = ({ onImageProcessed, onClose }: VetraCaptureModalProps
         return (
           <div className="space-y-6">
             <div className="text-center mb-8">
-              <h2 className="text-2xl font-bold mb-2">Choose Input Method</h2>
+              <h2 className="text-2xl font-bold mb-2">Livestock Analysis</h2>
               <p className="text-muted-foreground">
-                Select how you want to provide the livestock image
+                Provide both side and back view images for complete analysis
+              </p>
+            </div>
+
+            {/* Side View Section */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold">Side View Image</h3>
+                {sideImage && <CheckCircle2 className="w-5 h-5 text-green-500" />}
+              </div>
+              
+              {sideImage ? (
+                <div className="relative">
+                  <img
+                    src={sideImage.url}
+                    alt="Side view"
+                    className="w-full h-32 object-cover rounded-xl"
+                  />
+                  <button
+                    onClick={() => setSideImage(null)}
+                    className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full hover:bg-red-600"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={handleSideImageStart}
+                  className="vetra-button-secondary w-full p-4 flex items-center gap-3"
+                >
+                  <Camera className="w-6 h-6 text-primary" />
+                  <span>Add Side View Image</span>
+                </button>
+              )}
+
+              <div className="text-xs text-muted-foreground">
+                • Body Length • Withers Height • Girth Length • Rump Angle • Chest Depth • Head Length
+              </div>
+            </div>
+
+            {/* Back View Section */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold">Back View Image</h3>
+                {backImage && <CheckCircle2 className="w-5 h-5 text-green-500" />}
+              </div>
+              
+              {backImage ? (
+                <div className="relative">
+                  <img
+                    src={backImage.url}
+                    alt="Back view"
+                    className="w-full h-32 object-cover rounded-xl"
+                  />
+                  <button
+                    onClick={() => setBackImage(null)}
+                    className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full hover:bg-red-600"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={handleBackImageStart}
+                  className="vetra-button-secondary w-full p-4 flex items-center gap-3"
+                >
+                  <Camera className="w-6 h-6 text-primary" />
+                  <span>Add Back View Image</span>
+                </button>
+              )}
+
+              <div className="text-xs text-muted-foreground">
+                • Hip Width • Hip Height • Rump Width • Thurl Width • Tail Length
+              </div>
+            </div>
+
+            {/* Process Button */}
+            {sideImage && backImage && (
+              <button
+                onClick={processImages}
+                className="vetra-button-primary w-full py-4"
+              >
+                Process Images
+              </button>
+            )}
+
+            {/* Hidden file inputs */}
+            <input
+              type="file"
+              accept="image/*"
+              capture="environment"
+              onChange={(e) => handleFileSelection(e, "side")}
+              ref={sideCameraInputRef}
+              className="hidden"
+            />
+            
+            <input
+              type="file"
+              accept="image/*"
+              onChange={(e) => handleFileSelection(e, "side")}
+              ref={sideFileInputRef}
+              className="hidden"
+            />
+
+            <input
+              type="file"
+              accept="image/*"
+              capture="environment"
+              onChange={(e) => handleFileSelection(e, "back")}
+              ref={backCameraInputRef}
+              className="hidden"
+            />
+            
+            <input
+              type="file"
+              accept="image/*"
+              onChange={(e) => handleFileSelection(e, "back")}
+              ref={backFileInputRef}
+              className="hidden"
+            />
+          </div>
+        );
+
+      case "side-image":
+      case "back-image":
+        return (
+          <div className="space-y-6">
+            <div className="text-center mb-8">
+              <h2 className="text-2xl font-bold mb-2">
+                {step === "side-image" ? "Side View" : "Back View"} Image
+              </h2>
+              <p className="text-muted-foreground">
+                Choose how to capture the {step === "side-image" ? "side" : "back"} view
               </p>
             </div>
 
@@ -154,24 +298,6 @@ const VetraCaptureModal = ({ onImageProcessed, onClose }: VetraCaptureModalProps
                 </div>
               </button>
             </div>
-
-            {/* Hidden file inputs */}
-            <input
-              type="file"
-              accept="image/*"
-              capture="environment"
-              onChange={handleFileSelection}
-              ref={cameraInputRef}
-              className="hidden"
-            />
-            
-            <input
-              type="file"
-              accept="image/*"
-              onChange={handleFileSelection}
-              ref={fileInputRef}
-              className="hidden"
-            />
           </div>
         );
 
@@ -179,17 +305,28 @@ const VetraCaptureModal = ({ onImageProcessed, onClose }: VetraCaptureModalProps
         return (
           <div className="text-center py-12">
             <div className="w-16 h-16 mx-auto mb-6 border-4 border-primary/20 border-t-primary rounded-full animate-spin"></div>
-            <h2 className="text-xl font-semibold mb-2">Processing Image</h2>
+            <h2 className="text-xl font-semibold mb-2">Processing Images</h2>
             <p className="text-muted-foreground">
-              Analyzing livestock traits using AI...
+              Analyzing livestock traits from both views using AI...
             </p>
-            {capturedImage && (
-              <div className="mt-6 rounded-xl overflow-hidden max-w-xs mx-auto">
-                <img
-                  src={capturedImage}
-                  alt="Processing"
-                  className="w-full h-32 object-cover"
-                />
+            {sideImage && backImage && (
+              <div className="mt-6 flex gap-4 justify-center">
+                <div className="text-center">
+                  <img
+                    src={sideImage.url}
+                    alt="Side view processing"
+                    className="w-24 h-24 object-cover rounded-xl"
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">Side View</p>
+                </div>
+                <div className="text-center">
+                  <img
+                    src={backImage.url}
+                    alt="Back view processing"
+                    className="w-24 h-24 object-cover rounded-xl"
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">Back View</p>
+                </div>
               </div>
             )}
           </div>
@@ -208,7 +345,7 @@ const VetraCaptureModal = ({ onImageProcessed, onClose }: VetraCaptureModalProps
     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
       <div className="bg-card rounded-2xl p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between mb-6">
-          {step !== "select" && step !== "processing" ? (
+          {(step === "side-image" || step === "back-image") ? (
             <button
               onClick={() => setStep("select")}
               className="p-2 rounded-lg hover:bg-muted transition-colors"

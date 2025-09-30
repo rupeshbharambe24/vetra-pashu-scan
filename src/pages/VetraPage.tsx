@@ -109,9 +109,12 @@ const VetraPage = () => {
 
       {results && (
         <ResultsCard
-          imageUrl={results.imageUrl}
-          results={results.traits}
-          timestamp={new Date(results.timestamp).toLocaleString()}
+          entryId={results.entryId}
+          sideImageUrl={results.sideImageUrl}
+          backImageUrl={results.backImageUrl}
+          sideViewMeasurements={results.sideViewMeasurements}
+          backViewMeasurements={results.backViewMeasurements}
+          timestamp={results.timestamp}
           onClose={handleCloseResults}
         />
       )}

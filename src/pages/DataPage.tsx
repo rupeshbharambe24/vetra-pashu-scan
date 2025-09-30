@@ -5,9 +5,18 @@ import { useToast } from "@/hooks/use-toast";
 
 interface TraitResult {
   id: string;
-  imageUrl: string;
+  entryId: string;
+  sideImageUrl: string;
+  backImageUrl: string;
   timestamp: string;
-  traits: Array<{
+  status: string;
+  sideViewMeasurements: Array<{
+    name: string;
+    value: string;
+    unit: string;
+    confidence?: number;
+  }>;
+  backViewMeasurements: Array<{
     name: string;
     value: string;
     unit: string;
@@ -22,26 +31,42 @@ interface ResultCardProps {
 
 const ResultCard = ({ result, onViewDetails }: ResultCardProps) => {
   const date = new Date(result.timestamp);
-  const displayTraits = result.traits.slice(0, 3); // Show first 3 traits
+  const allMeasurements = [...result.sideViewMeasurements, ...result.backViewMeasurements];
+  const displayTraits = allMeasurements.slice(0, 3); // Show first 3 traits
 
   return (
     <div className="vetra-card p-4 cursor-pointer" onClick={() => onViewDetails(result)}>
       <div className="flex gap-4">
-        {/* Image thumbnail */}
-        <div className="w-20 h-20 rounded-xl overflow-hidden bg-muted shrink-0">
-          <img
-            src={result.imageUrl}
-            alt="Livestock analysis"
-            className="w-full h-full object-cover"
-          />
+        {/* Image thumbnails */}
+        <div className="flex gap-2 shrink-0">
+          <div className="w-16 h-16 rounded-xl overflow-hidden bg-muted">
+            <img
+              src={result.sideImageUrl}
+              alt="Side view"
+              className="w-full h-full object-cover"
+            />
+          </div>
+          <div className="w-16 h-16 rounded-xl overflow-hidden bg-muted">
+            <img
+              src={result.backImageUrl}
+              alt="Back view"
+              className="w-full h-full object-cover"
+            />
+          </div>
         </div>
 
         {/* Content */}
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-2">
+          <div className="flex items-center gap-2 mb-1">
             <Calendar className="w-4 h-4 text-muted-foreground" />
             <span className="text-sm text-muted-foreground">
               {date.toLocaleDateString()} at {date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+            </span>
+          </div>
+          
+          <div className="mb-2">
+            <span className="text-xs font-medium text-primary bg-primary/10 px-2 py-1 rounded">
+              {result.entryId}
             </span>
           </div>
 
@@ -56,9 +81,9 @@ const ResultCard = ({ result, onViewDetails }: ResultCardProps) => {
                 </span>
               </div>
             ))}
-            {result.traits.length > 3 && (
+            {allMeasurements.length > 3 && (
               <div className="text-xs text-muted-foreground">
-                +{result.traits.length - 3} more measurements
+                +{allMeasurements.length - 3} more measurements
               </div>
             )}
           </div>
@@ -82,7 +107,8 @@ const DetailModal = ({ result, onClose }: { result: TraitResult; onClose: () => 
         <div className="flex items-center justify-between mb-6">
           <div>
             <h2 className="text-xl font-semibold">Analysis Details</h2>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-sm text-muted-foreground">Entry ID: {result.entryId}</p>
+            <p className="text-xs text-muted-foreground">
               {date.toLocaleDateString()} at {date.toLocaleTimeString()}
             </p>
           </div>
@@ -95,21 +121,65 @@ const DetailModal = ({ result, onClose }: { result: TraitResult; onClose: () => 
         </div>
 
         <div className="space-y-6">
-          <div className="rounded-xl overflow-hidden">
-            <img
-              src={result.imageUrl}
-              alt="Analyzed livestock"
-              className="w-full h-48 object-cover"
-            />
+          {/* Image Thumbnails */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="text-center">
+              <div className="rounded-xl overflow-hidden mb-2">
+                <img
+                  src={result.sideImageUrl}
+                  alt="Side view"
+                  className="w-full h-32 object-cover"
+                />
+              </div>
+              <p className="text-sm font-medium">Side View</p>
+            </div>
+            <div className="text-center">
+              <div className="rounded-xl overflow-hidden mb-2">
+                <img
+                  src={result.backImageUrl}
+                  alt="Back view"
+                  className="w-full h-32 object-cover"
+                />
+              </div>
+              <p className="text-sm font-medium">Back View</p>
+            </div>
           </div>
 
+          {/* Side View Measurements */}
           <div className="space-y-3">
             <h3 className="font-semibold text-card-foreground flex items-center gap-2">
-              <TrendingUp className="w-5 h-5 text-primary" />
-              All Measurements
+              <div className="w-3 h-3 rounded-full bg-blue-500"></div>
+              Side View Measurements
             </h3>
             
-            {result.traits.map((trait, index) => (
+            {result.sideViewMeasurements.map((trait, index) => (
+              <div key={index} className="vetra-card p-4 flex items-center justify-between">
+                <div>
+                  <p className="font-medium text-card-foreground">{trait.name}</p>
+                  {trait.confidence && (
+                    <p className="text-xs text-muted-foreground">
+                      Confidence: {(trait.confidence * 100).toFixed(1)}%
+                    </p>
+                  )}
+                </div>
+                <div className="text-right">
+                  <p className="text-lg font-semibold text-primary">
+                    {trait.value}
+                  </p>
+                  <p className="text-sm text-muted-foreground">{trait.unit}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Back View Measurements */}
+          <div className="space-y-3">
+            <h3 className="font-semibold text-card-foreground flex items-center gap-2">
+              <div className="w-3 h-3 rounded-full bg-green-500"></div>
+              Back View Measurements
+            </h3>
+            
+            {result.backViewMeasurements.map((trait, index) => (
               <div key={index} className="vetra-card p-4 flex items-center justify-between">
                 <div>
                   <p className="font-medium text-card-foreground">{trait.name}</p>
@@ -156,7 +226,7 @@ const DataPage = () => {
       setLoading(true);
       
       // Try to fetch from backend API
-      const response = await fetch('/api/results');
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/get-livestock-results`);
       
       if (response.ok) {
         const data = await response.json();
@@ -171,25 +241,25 @@ const DataPage = () => {
       const mockResults: TraitResult[] = [
         {
           id: "1",
-          imageUrl: "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgZmlsbD0iIzBEOTQ4OCIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmaWxsPSJ3aGl0ZSIgZm9udC1zaXplPSIxNiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPkNhdHRsZSAjMTwvdGV4dD48L3N2Zz4=",
+          entryId: "LV-2025-000001",
+          sideImageUrl: "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgZmlsbD0iIzBEOTQ4OCIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmaWxsPSJ3aGl0ZSIgZm9udC1zaXplPSIxNCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPkNhdHRsZSBTaWRlPC90ZXh0Pjwvc3ZnPg==",
+          backImageUrl: "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgZmlsbD0iIzEwN0M1NSIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmaWxsPSJ3aGl0ZSIgZm9udC1zaXplPSIxNCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPkNhdHRsZSBCYWNrPC90ZXh0Pjwvc3ZnPg==",
           timestamp: new Date(Date.now() - 86400000).toISOString(), // 1 day ago
-          traits: [
+          status: "completed",
+          sideViewMeasurements: [
             { name: "Body Length", value: "145", unit: "cm", confidence: 0.94 },
             { name: "Withers Height", value: "132", unit: "cm", confidence: 0.91 },
-            { name: "Heart Girth", value: "178", unit: "cm", confidence: 0.96 },
+            { name: "Girth Length", value: "178", unit: "cm", confidence: 0.96 },
+            { name: "Rump Angle", value: "18", unit: "degrees", confidence: 0.89 },
+            { name: "Chest Depth", value: "72", unit: "cm", confidence: 0.87 },
+            { name: "Head Length", value: "48", unit: "cm", confidence: 0.85 }
+          ],
+          backViewMeasurements: [
             { name: "Hip Width", value: "52", unit: "cm", confidence: 0.89 },
-            { name: "Body Weight (Est.)", value: "485", unit: "kg", confidence: 0.87 }
-          ]
-        },
-        {
-          id: "2",
-          imageUrl: "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgZmlsbD0iIzE0MkI3MSIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmaWxsPSJ3aGl0ZSIgZm9udC1zaXplPSIxNiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPkJ1ZmZhbG8gIzE8L3RleHQ+PC9zdmc+",
-          timestamp: new Date(Date.now() - 172800000).toISOString(), // 2 days ago
-          traits: [
-            { name: "Body Length", value: "156", unit: "cm", confidence: 0.96 },
-            { name: "Withers Height", value: "128", unit: "cm", confidence: 0.93 },
-            { name: "Heart Girth", value: "195", unit: "cm", confidence: 0.98 },
-            { name: "Body Weight (Est.)", value: "520", unit: "kg", confidence: 0.89 }
+            { name: "Hip Height", value: "135", unit: "cm", confidence: 0.92 },
+            { name: "Rump Width", value: "45", unit: "cm", confidence: 0.83 },
+            { name: "Thurl Width", value: "26", unit: "cm", confidence: 0.78 },
+            { name: "Tail Length", value: "95", unit: "cm", confidence: 0.85 }
           ]
         }
       ];
