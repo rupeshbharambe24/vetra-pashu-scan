@@ -84,7 +84,6 @@ export const AboutPage = () => (
             <p>• Advanced computer vision algorithms</p>
             <p>• Machine learning models trained on livestock data</p>
             <p>• Real-time image processing capabilities</p>
-            <p>• 95%+ accuracy in trait measurement</p>
           </div>
         </div>
 
@@ -94,15 +93,15 @@ export const AboutPage = () => (
             <h3 className="font-semibold">Partnership</h3>
           </div>
           <p className="text-sm text-muted-foreground">
-            Developed under the National Digital Livestock Mission in collaboration with 
-            the Department of Animal Husbandry & Dairying, Government of India.
+            Prototype built for Smart India Hackathon 2025. Not an official
+            Government of India application.
           </p>
         </div>
 
         <div className="vetra-card p-6 text-center">
           <p className="text-sm text-muted-foreground">
             VETRA v1.0.0<br />
-            © 2024 National Digital Livestock Mission
+            © 2025 VETRA team (SIH 2025 prototype)
           </p>
         </div>
       </div>
@@ -127,9 +126,9 @@ export const ContactPage = () => (
         <div className="vetra-card p-6">
           <h3 className="font-semibold mb-4">Support Team</h3>
           <div className="space-y-3">
-            <a href="mailto:support@vetra.gov.in" className="vetra-button-primary w-full flex items-center justify-center gap-2">
+            <a href="mailto:support@example.com" className="vetra-button-primary w-full flex items-center justify-center gap-2">
               <Mail className="w-4 h-4" />
-              support@vetra.gov.in
+              support@example.com
             </a>
           </div>
         </div>
@@ -137,10 +136,7 @@ export const ContactPage = () => (
         <div className="vetra-card p-6">
           <h3 className="font-semibold mb-4">Address</h3>
           <div className="text-sm text-muted-foreground space-y-1">
-            <p>Department of Animal Husbandry & Dairying</p>
-            <p>Ministry of Fisheries, Animal Husbandry & Dairying</p>
-            <p>Government of India</p>
-            <p>New Delhi - 110001</p>
+            <p>Placeholder address (prototype)</p>
           </div>
         </div>
 

@@ -62,8 +62,8 @@ const VetraPage = () => {
               <div className="text-xs text-muted-foreground">Powered</div>
             </div>
             <div className="vetra-card p-4 text-center">
-              <div className="text-2xl font-bold text-primary mb-1">95%</div>
-              <div className="text-xs text-muted-foreground">Accuracy</div>
+              <div className="text-2xl font-bold text-primary mb-1">2</div>
+              <div className="text-xs text-muted-foreground">Views (side + back)</div>
             </div>
           </div>
 
